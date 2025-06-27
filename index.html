@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-Do List with Categories</title>
+<style>
+  body {
+    background: url('https://png.pngtree.com/thumb_back/fh260/background/20220828/pngtree-flat-lay-mockup-planner-of-wedding-todo-list-with-beautiful-flowers-photo-image_38746160.jpg') no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+   
+  }
+
+  h1 {
+    color: hotpink;
+    margin-bottom: 20px;
+    animation: bounce 1s ease;
+    text-shadow: 0 0 10px black;
+  }
+
+  .todo-container {
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border: 2px solid hotpink;
+    border-radius: 10px;
+    width: 400px;
+    box-shadow: 0 0 20px hotpink;
+    animation: fadeIn 1.2s ease;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .input-section {
+    display: flex;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  #taskInput, #categorySelect {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    outline: none;
+
+  }
+
+  #addBtn {
+    background-color: hotpink;
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  #addBtn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px aqua;
+  }
+
+  .category-section {
+    margin-bottom: 15px;
+  }
+
+  .category-heading {
+    color: aqua;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    text-decoration: underline;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  li {
+    background-color: #222;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-left: 5px solid hotpink;
+    border-radius: 5px;
+    position: relative;
+    animation: slideIn 0.5s ease;
+  }
+
+  li.completed {
+    text-decoration: line-through;
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+
+
+
+  .corner-icon {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 12px;
+    color: aqua;
+    animation: rotateIcon 2s linear infinite;
+  }
+
+  .btns button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin-left: 8px;
+    font-size: 16px;
+    transition: transform 0.3s ease, color 0.3s ease;
+  }
+
+  .btns button:hover {
+    transform: scale(1.2);
+    color: hotpink;
+  }
+
+  .progress-bar {
+    width: 100%;
+    background-color: #333;
+    border-radius: 5px;
+    overflow: hidden;
+    height: 15px;
+    margin-top: 15px;
+  }
+
+  .progress {
+    height: 100%;
+    background-color: hotpink;
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  .percent-text {
+    text-align: center;
+    margin-top: 5px;
+  }
+
+  /* Animations */
+  @keyframes slideIn {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes rotateIcon {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<h1>My To-Do List</h1>
+<div class="todo-container">
+  <div class="input-section">
+    <input type="text" id="taskInput" placeholder="Enter your task">
+    <select id="categorySelect">
+      <option value="Work">Work</option>
+      <option value="Personal">Personal</option>
+      <option value="Shopping">Shopping</option>
+      <option value="Study">Study</option>
+    </select>
+    <button id="addBtn">Add</button>
+  </div>
+
+  <div class="category-section" id="categorySections">
+    <!-- Categories and Tasks will be dynamically added here -->
+  </div>
+
+  <div class="progress-bar">
+    <div class="progress" id="progress"></div>
+  </div>
+  <div class="percent-text" id="percentText">0% Completed</div>
+</div>
+
+<script>
+const addBtn = document.getElementById('addBtn');
+const taskInput = document.getElementById('taskInput');
+const categorySelect = document.getElementById('categorySelect');
+const categorySections = document.getElementById('categorySections');
+const progress = document.getElementById('progress');
+const percentText = document.getElementById('percentText');
+
+// Store categories DOM references
+const categories = {};
+
+// Load tasks from storage when page loads
+document.addEventListener('DOMContentLoaded', loadTasks);
+
+addBtn.addEventListener('click', () => {
+    const taskText = taskInput.value.trim();
+    const selectedCategory = categorySelect.value;
+    if (taskText === '') return;
+
+    addTask(taskText, selectedCategory, false);
+    taskInput.value = '';
+    saveTasks();
+    updateProgress();
+});
+
+function addTask(text, category, completed) {
+    if (!categories[category]) {
+        const heading = document.createElement('h3');
+        heading.textContent = category;
+        heading.classList.add('category-heading');
+
+        const ul = document.createElement('ul');
+        ul.id = `${category}-list`;
+
+        categorySections.appendChild(heading);
+        categorySections.appendChild(ul);
+        categories[category] = ul;
+    }
+
+    const li = document.createElement('li');
+    if (completed) li.classList.add('completed');
+
+    const icon = document.createElement('div');
+    icon.classList.add('icons');
+
+    const cornerIcon = document.createElement('div');
+    cornerIcon.classList.add('corner-icon');
+    cornerIcon.innerHTML = '★';
+
+    const span = document.createElement('span');
+    span.textContent = text;
+
+    const btns = document.createElement('div');
+    btns.classList.add('btns');
+
+    const completeBtn = document.createElement('button');
+    completeBtn.innerHTML = '✔️';
+    completeBtn.title = "Mark Complete";
+    completeBtn.addEventListener('click', () => {
+        li.classList.toggle('completed');
+        saveTasks();
+        updateProgress();
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.innerHTML = '🗑️';
+    removeBtn.title = "Remove Task";
+    removeBtn.addEventListener('click', () => {
+        li.remove();
+        saveTasks();
+        updateProgress();
+    });
+
+    btns.appendChild(completeBtn);
+    btns.appendChild(removeBtn);
+
+    li.appendChild(cornerIcon);
+    li.appendChild(icon);
+    li.appendChild(span);
+    li.appendChild(btns);
+
+    categories[category].appendChild(li);
+    updateProgress();
+}
+
+// Save all tasks to localStorage
+function saveTasks() {
+    const allTasks = [];
+
+    for (const category in categories) {
+        const taskItems = categories[category].querySelectorAll('li');
+        taskItems.forEach(li => {
+            allTasks.push({
+                text: li.querySelector('span').textContent,
+                category: category,
+                completed: li.classList.contains('completed')
+            });
+        });
+    }
+
+    localStorage.setItem('todoTasks', JSON.stringify(allTasks));
+}
+
+// Load tasks from localStorage
+function loadTasks() {
+    const storedTasks = JSON.parse(localStorage.getItem('todoTasks')) || [];
+    storedTasks.forEach(task => {
+        addTask(task.text, task.category, task.completed);
+    });
+    updateProgress();
+}
+
+// Update progress bar
+function updateProgress() {
+    const allTasks = categorySections.querySelectorAll('li');
+    const completedTasks = categorySections.querySelectorAll('li.completed');
+    const total = allTasks.length;
+    const completed = completedTasks.length;
+    const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    progress.style.width = percent + '%';
+    percentText.textContent = `${percent}% Completed`;
+}
+
+</script>
+
+</body>
+</html>
